@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鲁迅小说游戏集</title>
+    <style>
+        :root {
+            --ink-black: #2c2c2c;
+            --old-paper: #f5f5dc;
+            --book-brown: #8b4513;
+            --gold: #d4af37;
+            --silver-gray: #c0c0c0;
+            --bg-dark: #1a1a1a;
+            --shadow-black: #0a0a0a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--old-paper);
+            font-family: "SimSun", "STSong", serif;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 书脊样式 */
+        .book-spine {
+            background: linear-gradient(145deg, var(--book-brown), var(--ink-black));
+            color: var(--gold);
+            padding: 40px 0;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .book-title {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .book-subtitle {
+            font-size: 20px;
+            opacity: 0.9;
+        }
+
+        /* 导航栏 */
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(139, 69, 19, 0.2);
+            border-radius: 8px;
+            border: 1px solid var(--book-brown);
+        }
+
+        .nav-button {
+            background: linear-gradient(145deg, var(--gold), #b8860b);
+            color: white;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-button:hover {
+            background: linear-gradient(145deg, #b8860b, var(--gold));
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .nav-button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 目录样式 */
+        .table-of-contents {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid var(--book-brown);
+            margin-bottom: 30px;
+        }
+
+        .toc-title {
+            font-size: 24px;
+            color: var(--gold);
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 10px;
+        }
+
+        .toc-list {
+            list-style: none;
+        }
+
+        .toc-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .toc-item:hover {
+            background: rgba(212, 175, 55, 0.1);
+            transform: translateX(5px);
+        }
+
+        .toc-link {
+            color: var(--old-paper);
+            text-decoration: none;
+            font-size: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toc-link:hover {
+            color: var(--gold);
+        }
+
+        .toc-number {
+            color: var(--gold);
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        /* 游戏内容区域 */
+        .game-content {
+            background: linear-gradient(145deg, var(--book-brown), var(--ink-black));
+            border: 10px solid var(--old-paper);
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.9), 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 30px;
+        }
+
+        .game-title {
+            font-size: 32px;
+            color: var(--gold);
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 15px;
+        }
+
+        .game-description {
+            font-size: 18px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            text-align: justify;
+        }
+
+        .game-preview {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .preview-title {
+            font-size: 20px;
+            color: var(--gold);
+            margin-bottom: 10px;
+        }
+
+        /* 底部信息 */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: rgba(139, 69, 19, 0.2);
+            border-radius: 8px;
+            margin-top: 30px;
+            font-size: 14px;
+            color: var(--silver-gray);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .book-title {
+                font-size: 32px;
+            }
+
+            .navigation {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .nav-button {
+                width: 100%;
+                text-align: center;
+            }
+
+            .table-of-contents {
+                padding: 20px;
+            }
+
+            .game-content {
+                padding: 20px;
+                border-width: 5px;
+            }
+        }
+
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gold);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 书脊 -->
+        <div class="book-spine">
+            <h1 class="book-title">鲁迅小说游戏集</h1>
+            <p class="book-subtitle">从《代序》到每篇小说的交互式游戏体验</p>
+        </div>
+
+        <!-- 导航栏 -->
+        <div class="navigation">
+            <button id="prev-btn" class="nav-button" onclick="navigateToPrevious()">上一篇</button>
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1; max-width: 400px; margin: 0 20px;">
+                <input type="password" id="api-key" placeholder="输入硅基流动 API Key" style="padding: 10px; border: 1px solid #8b4513; border-radius: 4px; background: rgba(255,255,255,0.1); color: #f5f5dc; font-family: 'SimSun', 'STSong', serif;">
+                <button class="nav-button" onclick="saveApiKey()" style="white-space: nowrap;">保存</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div id="unlock-status-index" style="color: var(--gold); font-size: 14px;"></div>
+                <button class="nav-button" onclick="showDonationDialog()" id="donation-btn-index">打赏解锁</button>
+            </div>
+        </div>
+
+        <!-- 目录 -->
+        <div class="table-of-contents fade-in">
+            <h2 class="toc-title">目录</h2>
+            <ul class="toc-list" id="toc-list">
+                <!-- 目录项将通过JavaScript动态生成 -->
+            </ul>
+        </div>
+
+        <!-- 游戏内容区域 -->
+        <div class="game-content fade-in">
+            <h2 class="game-title" id="current-game-title">鲁迅小说游戏</h2>
+            <div class="game-description">
+                <p>欢迎来到鲁迅小说游戏集！这里收录了鲁迅先生的经典小说，每篇小说都被改编为交互式游戏，让您在游戏中感受鲁迅小说的魅力。</p>
+                <p>您可以通过目录选择任意一篇小说游戏，也可以使用导航按钮顺序阅读。每个游戏都包含了小说的核心内容，并通过交互式的方式呈现，让您更深入地理解鲁迅的文学世界。</p>
+            </div>
+            <div class="game-preview">
+                <h3 class="preview-title">游戏特色</h3>
+                <ul>
+                    <li>交互式剧情体验</li>
+                    <li>AI生成的动态对话</li>
+                    <li>精美的视觉效果</li>
+                    <li>完整的小说内容</li>
+                    <li>书页式导航设计</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 底部信息 -->
+        <div class="footer">
+            <p>© 2026 鲁迅小说游戏集 | 技能管理系统 v1.0.0</p>
+            <p>基于鲁迅经典小说改编的交互式游戏体验</p>
+        </div>
+    </div>
+
+    <script>
+        // 游戏数据
+        const games = [
+            {
+                id: "luxun-douxu",
+                name: "鲁迅小说-代序",
+                description: "鲁迅小说《我怎么做起小说来》的交互式游戏",
+                path: "daixu.html",
+                order: 1
+            },
+            {
+                id: "luxun-yijianxiaoshi",
+                name: "鲁迅小说-一件小事",
+                description: "鲁迅小说《一件小事》的交互式游戏",
+                path: "yijianxiaoshi.html",
+                order: 2
+            },
+            {
+                id: "luxun-kongyiji",
+                name: "鲁迅小说-孔乙己",
+                description: "鲁迅小说《孔乙己》的交互式游戏",
+                path: "kongyiji.html",
+                order: 3
+            },
+            {
+                id: "luxun-yao",
+                name: "鲁迅小说-药",
+                description: "鲁迅小说《药》的交互式游戏",
+                path: "yao.html",
+                order: 4
+            },
+            {
+                id: "luxun-mintian",
+                name: "鲁迅小说-明天",
+                description: "鲁迅小说《明天》的交互式游戏",
+                path: "mintian.html",
+                order: 5
+            },
+            {
+                id: "luxun-shexi",
+                name: "鲁迅小说-社戏",
+                description: "鲁迅小说《社戏》的交互式游戏",
+                path: "shexi.html",
+                order: 6
+            },
+            {
+                id: "luxun-guxiang",
+                name: "鲁迅小说-故乡",
+                description: "鲁迅小说《故乡》的交互式游戏",
+                path: "guxiang.html",
+                order: 7
+            },
+            {
+                id: "luxun-xingfudejiating",
+                name: "鲁迅小说-幸福的家庭",
+                description: "鲁迅小说《幸福的家庭》的交互式游戏",
+                path: "xingfudejiating.html",
+                order: 8
+            },
+            {
+                id: "luxun-shansi",
+                name: "鲁迅小说-伤逝",
+                description: "鲁迅小说《伤逝》的交互式游戏",
+                path: "shansi.html",
+                order: 9
+            },
+            {
+                id: "luxun-lihun",
+                name: "鲁迅小说-离婚",
+                description: "鲁迅小说《离婚》的交互式游戏",
+                path: "lihun.html",
+                order: 10
+            },
+            {
+                id: "luxun-gaolaofuzi",
+                name: "鲁迅小说-高老夫子",
+                description: "鲁迅小说《高老夫子》的交互式游戏",
+                path: "gaolaofuzi.html",
+                order: 11
+            },
+            {
+                id: "luxun-bengyue",
+                name: "鲁迅小说-奔月",
+                description: "鲁迅小说《奔月》的交互式游戏",
+                path: "bengyue.html",
+                order: 12
+            },
+            {
+                id: "luxun-butian",
+                name: "鲁迅小说-补天",
+                description: "鲁迅小说《补天》的交互式游戏",
+                path: "butian.html",
+                order: 13
+            },
+            {
+                id: "luxun-caiwei",
+                name: "鲁迅小说-采薇",
+                description: "鲁迅小说《采薇》的交互式游戏",
+                path: "caiwei.html",
+                order: 14
+            },
+            {
+                id: "luxun-zhujian",
+                name: "鲁迅小说-铸剑",
+                description: "鲁迅小说《铸剑》的交互式游戏",
+                path: "zhujian.html",
+                order: 15
+            },
+            {
+                id: "luxun-qishi",
+                name: "鲁迅小说-起死",
+                description: "鲁迅小说《起死》的交互式游戏",
+                path: "qishi.html",
+                order: 16
+            },
+            {
+                id: "luxun-huaijiu",
+                name: "鲁迅小说-怀旧",
+                description: "鲁迅小说《怀旧》的交互式游戏",
+                path: "huaijiu.html",
+                order: 17
+            }
+        ];
+
+        // 更新目录
+        function updateTableOfContents() {
+            const tocList = document.getElementById('toc-list');
+            if (!tocList) return;
+
+            tocList.innerHTML = '';
+            games.sort((a, b) => a.order - b.order).forEach(game => {
+                const li = document.createElement('li');
+                li.className = 'toc-item';
+                li.innerHTML = `
+                    <a href="${game.path}" class="toc-link">
+                        <span class="toc-number">${game.order}.</span>
+                        ${game.name}
+                    </a>
+                `;
+                tocList.appendChild(li);
+            });
+        }
+
+        // 获取游戏按顺序
+        function getGameByOrder(order) {
+            return games.find(game => game.order === order);
+        }
+
+        // 获取上一篇游戏
+        function getPreviousGame(currentOrder) {
+            if (currentOrder <= 1) return null;
+            return getGameByOrder(currentOrder - 1);
+        }
+
+        // 获取下一篇游戏
+        function getNextGame(currentOrder) {
+            const maxOrder = Math.max(...games.map(game => game.order));
+            if (currentOrder >= maxOrder) return null;
+            return getGameByOrder(currentOrder + 1);
+        }
+
+        // 初始化
+        updateTableOfContents();
+
+        // 导航功能
+        function navigateToPrevious() {
+            console.log('点击了上一篇按钮');
+            console.log('游戏数量:', games.length);
+            
+            // 获取当前技能顺序
+            const currentUrl = window.location.href;
+            const currentFileName = currentUrl.split('/').pop();
+            console.log('当前文件名:', currentFileName);
+            
+            // 检查是否在index.html页面
+            if (currentFileName === 'index.html') {
+                console.log('在index.html页面，上一篇按钮被禁用');
+                return;
+            }
+            
+            // 查找当前游戏
+            let currentGame = null;
+            if (currentFileName) {
+                currentGame = games.find(game => {
+                    console.log('检查游戏:', game.name, '路径:', game.path, '文件名:', game.path);
+                    return game.path === currentFileName;
+                });
+            }
+
+            console.log('当前游戏:', currentGame);
+            
+            if (currentGame) {
+                const previousGame = getPreviousGame(currentGame.order);
+                console.log('上一篇游戏:', previousGame);
+                if (previousGame) {
+                    console.log('导航到:', previousGame.path);
+                    window.location.href = previousGame.path;
+                } else {
+                    console.log('已经是第一篇，导航回index.html');
+                    window.location.href = 'index.html';
+                }
+            } else {
+                console.log('未找到当前游戏，导航回index.html');
+                window.location.href = 'index.html';
+            }
+        }
+
+        function navigateToNext() {
+            console.log('点击了下一篇按钮');
+            console.log('游戏数量:', games.length);
+            
+            // 获取当前技能顺序
+            const currentUrl = window.location.href;
+            const currentFileName = currentUrl.split('/').pop();
+            console.log('当前文件名:', currentFileName);
+            
+            // 检查是否在index.html页面
+            if (currentFileName === 'index.html') {
+                console.log('在index.html页面，导航到第一篇游戏');
+                const firstGame = getGameByOrder(1);
+                console.log('第一篇游戏:', firstGame);
+                if (firstGame) {
+                    console.log('导航到:', firstGame.path);
+                    window.location.href = firstGame.path;
+                }
+                return;
+            }
+            
+            // 查找当前游戏
+            let currentGame = null;
+            if (currentFileName) {
+                currentGame = games.find(game => {
+                    console.log('检查游戏:', game.name, '路径:', game.path, '文件名:', game.path);
+                    return game.path === currentFileName;
+                });
+            }
+
+            console.log('当前游戏:', currentGame);
+            
+            if (currentGame) {
+                const nextGame = getNextGame(currentGame.order);
+                console.log('下一篇游戏:', nextGame);
+                if (nextGame) {
+                    console.log('导航到:', nextGame.path);
+                    window.location.href = nextGame.path;
+                }
+            } else {
+                console.log('未找到当前游戏，导航到第一篇游戏');
+                const firstGame = getGameByOrder(1);
+                if (firstGame) {
+                    window.location.href = firstGame.path;
+                }
+            }
+        }
+
+        // 保存API Key到localStorage
+        function saveApiKey() {
+            const apiKeyInput = document.getElementById('api-key');
+            if (apiKeyInput) {
+                const apiKey = apiKeyInput.value.trim();
+                if (apiKey) {
+                    localStorage.setItem('siliconFlowApiKey', apiKey);
+                    alert('API Key 保存成功！');
+                    console.log('API Key 已保存到 localStorage');
+                } else {
+                    alert('请输入有效的 API Key');
+                }
+            }
+        }
+
+        // 加载保存的API Key
+        function loadApiKey() {
+            const apiKeyInput = document.getElementById('api-key');
+            if (apiKeyInput) {
+                const savedApiKey = localStorage.getItem('siliconFlowApiKey');
+                if (savedApiKey) {
+                    apiKeyInput.value = savedApiKey;
+                    console.log('已从 localStorage 加载 API Key');
+                }
+            }
+        }
+
+        // 检查解锁状态
+        function checkUnlockStatus() {
+            const isUnlocked = localStorage.getItem('luxunGamesUnlocked') === 'true';
+            const statusElement = document.getElementById('unlock-status-index');
+            const donationBtn = document.getElementById('donation-btn-index');
+            
+            if (statusElement && donationBtn) {
+                if (isUnlocked) {
+                    statusElement.textContent = '🎉 已解锁全部内容';
+                    donationBtn.textContent = '已解锁';
+                    donationBtn.disabled = true;
+                    donationBtn.style.background = 'linear-gradient(145deg, #228B22, #006400)';
+                } else {
+                    statusElement.textContent = '🔒 未解锁';
+                }
+            }
+        }
+
+        // 显示捐赠对话框
+        function showDonationDialog() {
+            // 创建模态对话框
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+
+            // 对话框内容
+            const dialog = document.createElement('div');
+            dialog.style.cssText = `
+                background: linear-gradient(145deg, #8b4513, #2c1e14);
+                border: 8px solid #2c1e14;
+                border-radius: 8px;
+                padding: 40px;
+                text-align: center;
+                max-width: 500px;
+                width: 90%;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            `;
+
+            // 收款码图片
+            const qrCodeImg = document.createElement('img');
+            qrCodeImg.src = '收款码.png';
+            qrCodeImg.alt = '收款码';
+            qrCodeImg.style.cssText = `
+                width: 200px;
+                height: 200px;
+                margin: 20px 0;
+                border: 2px solid #d4af37;
+                border-radius: 8px;
+            `;
+
+            // 文字说明
+            const content = `
+                <h2 style="color: #d4af37; margin-bottom: 20px;">💰 打赏解锁</h2>
+                <p style="color: #f5f5dc; margin-bottom: 20px;">支付1元及以上，解锁所有游戏内容</p>
+                <p style="color: #d4af37; margin-bottom: 10px;">请扫描上方二维码进行支付</p>
+                <div style="margin: 30px 0;"></div>
+                <button onclick="confirmDonation(); this.parentElement.parentElement.remove();" style="
+                    background: linear-gradient(145deg, #8b0000, #660000);
+                    color: white;
+                    padding: 15px 30px;
+                    font-size: 18px;
+                    cursor: pointer;
+                    border: none;
+                    border-radius: 6px;
+                    transition: all 0.3s ease;
+                    font-weight: bold;
+                    margin-right: 10px;
+                ">确认已支付</button>
+                <button onclick="this.parentElement.parentElement.remove();" style="
+                    background: linear-gradient(145deg, #666, #333);
+                    color: white;
+                    padding: 15px 30px;
+                    font-size: 18px;
+                    cursor: pointer;
+                    border: none;
+                    border-radius: 6px;
+                    transition: all 0.3s ease;
+                ">取消</button>
+            `;
+
+            dialog.innerHTML = content;
+            dialog.insertBefore(qrCodeImg, dialog.querySelector('div'));
+            modal.appendChild(dialog);
+            document.body.appendChild(modal);
+        }
+
+        // 确认捐赠
+        function confirmDonation() {
+            localStorage.setItem('luxunGamesUnlocked', 'true');
+            checkUnlockStatus();
+            alert('🎉 感谢您的支持！所有游戏内容已解锁。');
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            // 加载保存的API Key
+            loadApiKey();
+            
+            // 检查解锁状态
+            checkUnlockStatus();
+            
+            // 添加淡入动画
+            document.querySelectorAll('.fade-in').forEach(element => {
+                element.style.opacity = '0';
+                element.style.transform = 'translateY(20px)';
+                element.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
+            });
+
+            setTimeout(() => {
+                document.querySelectorAll('.fade-in').forEach(element => {
+                    element.style.opacity = '1';
+                    element.style.transform = 'translateY(0)';
+                });
+            }, 100);
+        });
+    </script>
+</body>
+</html>

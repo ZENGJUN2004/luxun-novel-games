@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>祝福：鲁迅小说交互式微短剧版</title>
+    <style>
+        :root {
+            --wood-dark: #2c1e14;
+            --wood-light: #8b6914;
+            --paper: #f4e9d8;
+            --blood: #8b0000;
+            --gold: #d4af37;
+            --bg-dark: #1a1a1a;
+            --earth: #d2b48c;
+            --earth-dark: #8b4513;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--paper);
+            font-family: "SimSun", "STSong", serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        #main-stage {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #theater-view {
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(145deg, var(--earth-dark), var(--wood-dark));
+            border: 10px solid var(--wood-dark);
+            border-radius: 8px;
+            position: relative;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.9), 0 10px 30px rgba(0,0,0,0.5);
+            height: calc(100vh - 40px);
+            min-height: 600px;
+            overflow: hidden;
+        }
+
+        #drama-status {
+            background: rgba(139, 0, 0, 0.9);
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 2px;
+            display: none;
+            z-index: 10;
+        }
+
+        #narrative-overlay {
+            padding: 20px;
+            font-style: italic;
+            color: var(--gold);
+            text-align: center;
+            background: rgba(0,0,0,0.6);
+            border-bottom: 2px solid var(--wood-light);
+            flex-shrink: 0;
+            font-size: 16px;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        #chat-flow {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--wood-light) transparent;
+            scroll-behavior: smooth;
+        }
+
+        #chat-flow::-webkit-scrollbar { width: 8px; }
+        #chat-flow::-webkit-scrollbar-thumb { background: var(--wood-light); border-radius: 4px; }
+
+        .msg {
+            max-width: 85%;
+            margin-bottom: 25px;
+            padding: 18px 22px;
+            position: relative;
+            line-height: 1.8;
+            font-size: 18px;
+            animation: slideIn 0.5s ease-out forwards;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes slideIn { 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        .msg-name {
+            display: block;
+            color: var(--gold);
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            padding-bottom: 4px;
+        }
+
+        /* 角色边框色 */
+        .msg-祥林嫂 { border-left: 5px solid #d2b48c; }
+        .msg-鲁四老爷 { border-left: 5px solid #8b0000; }
+        .msg-鲁四婶 { border-left: 5px solid #4682b4; }
+        .msg-卫老婆子 { border-left: 5px solid #ffb6c1; }
+        .msg-柳妈 { border-left: 5px solid #8b4513; }
+        .msg-我 { border-left: 5px solid #90ee90; }
+
+        #control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .panel-box {
+            background: #222;
+            padding: 15px;
+            border: 1px solid #444;
+            border-radius: 8px;
+        }
+
+        .btn-play {
+            background: linear-gradient(145deg, var(--blood), #660000);
+            color: white;
+            padding: 15px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .btn-play:hover:not(:disabled) { filter: brightness(1.2); transform: translateY(-2px); }
+        .btn-play:disabled { background: #444; cursor: not-allowed; }
+
+        #timer-display {
+            font-size: 28px;
+            color: var(--gold);
+            text-align: center;
+            font-family: monospace;
+            background: #000;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            background: #111;
+            border: 1px solid #444;
+            color: var(--paper);
+            padding: 10px;
+            box-sizing: border-box;
+            margin-top: 5px;
+            border-radius: 4px;
+        }
+
+        .char-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 900px) {
+            #main-stage { grid-template-columns: 1fr; }
+            #theater-view { height: 500px; }
+        }
+        
+        /* 导航按钮样式 */
+        .nav-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            min-width: 100px;
+            text-align: center;
+            font-family: "SimSun", "STSong", serif;
+        }
+        
+        .nav-btn-prev {
+            background: linear-gradient(145deg, #704214, #5a3410);
+            color: #f5f5dc;
+        }
+        
+        .nav-btn-prev:hover {
+            background: linear-gradient(145deg, #8a551a, #704214);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(112, 66, 20, 0.4);
+        }
+        
+        .nav-btn-next {
+            background: linear-gradient(145deg, #d4af37, #b8860b);
+            color: #1a1a1a;
+        }
+        
+        .nav-btn-next:hover {
+            background: linear-gradient(145deg, #fbbf24, #d4af37);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+        }
+        
+        .nav-btn-home {
+            background: linear-gradient(145deg, #c0c0c0, #a8a8a8);
+            color: #1a1a1a;
+        }
+        
+        .nav-btn-home:hover {
+            background: linear-gradient(145deg, #d8d8d8, #c0c0c0);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(192, 192, 192, 0.4);
+        }
+        
+        /* 响应式导航 */
+        @media (max-width: 768px) {
+            .nav-container {
+                position: relative;
+                top: auto;
+                right: auto;
+                justify-content: center;
+                margin: 20px 0;
+                flex-wrap: wrap;
+            }
+            
+            .nav-btn {
+                font-size: 12px;
+                padding: 8px 16px;
+                min-width: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航按钮 -->
+    <div class="nav-container">
+        <a href="#" class="nav-btn nav-btn-prev" id="prev-btn">上一篇</a>
+        <a href="#" class="nav-btn nav-btn-next" id="next-btn">下一篇</a>
+        <a href="index.html" class="nav-btn nav-btn-home" id="home-btn">目录</a>
+    </div>
+    
+    <div id="main-stage">
+        <div id="theater-view">
+            <div id="drama-status">● 微短剧录制中...</div>
+            <div id="narrative-overlay">鲁镇。祝福的空气里弥漫着烟火的气息。</div>
+            <div id="chat-flow"></div>
+        </div>
+
+        <div id="control-panel">
+            <div class="panel-box">
+                <strong>🎬 剧场设置</strong>
+                <p style="font-size: 12px; color: #888;">核心冲突 (剧本大纲):</p>
+                <textarea id="plot-outline" rows="3">祥林嫂来到鲁镇，在祝福的鞭炮声中，她那渐渐干枯的灵魂在众人的冷眼与迷信中走向消亡。</textarea>
+                
+                <p style="font-size: 12px; color: #888;">场景：</p>
+                <select id="scene-select">
+                    <option value="鲁镇">鲁镇街道</option>
+                    <option value="鲁四老爷的书房">鲁四老爷的书房</option>
+                    <option value="鲁四老爷的厨房">鲁四老爷的厨房</option>
+                    <option value="河边">河边</option>
+                    <option value="土地庙">土地庙</option>
+                </select>
+
+                <div class="char-grid">
+                    <label><input type="checkbox" name="character" value="祥林嫂" checked> 祥林嫂</label>
+                    <label><input type="checkbox" name="character" value="鲁四老爷" checked> 鲁四老爷</label>
+                    <label><input type="checkbox" name="character" value="鲁四婶" checked> 鲁四婶</label>
+                    <label><input type="checkbox" name="character" value="柳妈"> 柳妈</label>
+                    <label><input type="checkbox" name="character" value="我"> 我</label>
+                    <label><input type="checkbox" name="character" value="卫老婆子"> 卫老婆子</label>
+                </div>
+            </div>
+
+            <div class="panel-box">
+                <strong>⏱ 剧集计时</strong>
+                <div id="timer-display">05:00</div>
+                <button class="btn-play" id="start-btn" onclick="toggleDrama()">开始生成短剧</button>
+            </div>
+
+            <div class="panel-box">
+                <button onclick="exportScript()" style="width:100%; cursor:pointer;">导出本集剧本</button>
+            </div>
+
+            <div class="panel-box">
+                <strong>💰 打赏解锁</strong>
+                <p>支付1元及以上，解锁所有游戏内容</p>
+                <button class="btn-play" onclick="showDonationDialog()" id="donation-btn">打赏解锁</button>
+                <div id="unlock-status" style="margin-top: 10px; text-align: center; color: var(--gold);"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CHARACTERS = {
+            "祥林嫂": { personality: "勤劳善良、命运悲惨、眼神间或一轮、深受礼教迫害", speechStyle: "朴实、哀伤、反复叙述", catchphrases: ["我真傻，真的", "阿毛..."] },
+            "鲁四老爷": { personality: "封建保守、冷酷无情、讲究礼教", speechStyle: "威严、简短、充满说教", catchphrases: ["谬种！", "败坏风俗"] },
+            "鲁四婶": { personality: "庸常但受束缚、同情心有限", speechStyle: "琐碎、胆怯", catchphrases: ["你放着吧"] },
+            "柳妈": { personality: "迷信、冷漠的善意、愚昧", speechStyle: "絮叨、恐吓式劝诫", catchphrases: ["捐个门槛吧"] },
+            "我": { personality: "知识分子的软弱、逃避、清醒的旁观者", speechStyle: "犹豫、哲理化", catchphrases: ["说不清"] },
+            "卫老婆子": { personality: "市井精明、能说会道", speechStyle: "圆滑、市井", catchphrases: ["包在我身上"] }
+        };
+
+        let isPlaying = false;
+        let timeRemaining = 300;
+        let scriptHistory = [];
+        let timerInterval;
+
+        async function callAI(system, user) {
+            const key = localStorage.getItem('siliconFlowApiKey');
+            if (!key) {
+                alert('请先在目录页输入并保存硅基流动 API Key');
+                window.location.href = 'index.html';
+                return null;
+            }
+            try {
+                const resp = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: "deepseek-ai/DeepSeek-V3",
+                        messages: [{role: "system", content: system}, {role: "user", content: user}],
+                        temperature: 0.8,
+                        max_tokens: 300
+                    })
+                });
+                const data = await resp.json();
+                return data.choices[0].message.content;
+            } catch(e) {
+                console.error("API Error:", e);
+                alert('API 调用失败，请检查 API Key 是否正确');
+                return null;
+            }
+        }
+
+        async function toggleDrama() {
+            const key = localStorage.getItem('siliconFlowApiKey');
+            if(!key) {
+                alert('请先在目录页输入并保存硅基流动 API Key');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            if(isPlaying) {
+                stopDrama();
+            } else {
+                startDrama();
+            }
+        }
+
+        function startDrama() {
+            isPlaying = true;
+            document.getElementById('start-btn').innerText = "停止剧集录制";
+            document.getElementById('drama-status').style.display = 'block';
+            startTimer();
+            dramaLoop();
+        }
+
+        function stopDrama() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            document.getElementById('start-btn').innerText = "开始生成5分钟短剧";
+            document.getElementById('start-btn').disabled = false;
+            document.getElementById('drama-status').innerText = "● 录制已结束";
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                const m = Math.floor(timeRemaining/60);
+                const s = timeRemaining%60;
+                document.getElementById('timer-display').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                if(timeRemaining <= 0) stopDrama();
+            }, 1000);
+        }
+
+        async function dramaLoop() {
+            while(isPlaying) {
+                const outline = document.getElementById('plot-outline').value;
+                const scene = document.getElementById('scene-select').value;
+                const selectedChars = Array.from(document.querySelectorAll('input[name="character"]:checked')).map(c => c.value);
+                
+                if(selectedChars.length === 0) { stopDrama(); alert("请至少选择一个角色"); break; }
+
+                const recentHistory = scriptHistory.slice(-3).join("\n");
+                
+                // 1. 导演分配任务
+                const directorPrompt = `你是一位深研鲁迅文学的导演。当前大纲：${outline}。场景：${scene}。最近对话：${recentHistory}。
+                请从【${selectedChars.join(", ")}】中选出一个角色并给出冲突指令。格式：角色名|指令。
+                要求：指令要能体现封建礼教对人的压迫或角色间的隔膜。`;
+
+                const instructionRaw = await callAI("你只输出'角色名|指令'。", directorPrompt);
+                
+                if(instructionRaw && instructionRaw.includes('|')) {
+                    const [actor, instruction] = instructionRaw.split('|');
+                    const charInfo = CHARACTERS[actor] || CHARACTERS["祥林嫂"];
+
+                    // 2. 角色表演
+                    const actorPrompt = `你是鲁迅小说《祝福》中的${actor}。性格：${charInfo.personality}。语言风格：${charInfo.speechStyle}。
+                    当前场景：${scene}。导演要求：${instruction}。
+                    要求：请用冷峻、灰暗的笔触描写一段对话。包含：【动作描写】、神态描写、符合人物身份的台词。
+                    注意：不要有任何现代词汇，使用半文半白的晚清民国口语。字数60字左右。`;
+
+                    const performance = await callAI(actorPrompt, "请开始表演：");
+                    
+                    if(performance) {
+                        appendMsg(actor, performance);
+                        scriptHistory.push(`${actor}: ${performance}`);
+                    }
+                }
+                
+                await new Promise(r => setTimeout(r, 7000)); // 间隔7秒生成下一段
+            }
+        }
+
+        function appendMsg(name, text) {
+            const flow = document.getElementById('chat-flow');
+            const div = document.createElement('div');
+            div.className = `msg msg-${name}`;
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'msg-name';
+            nameSpan.textContent = name;
+            
+            const textContent = document.createTextNode(text);
+            
+            div.appendChild(nameSpan);
+            div.appendChild(textContent);
+            flow.appendChild(div);
+            
+            flow.scrollTop = flow.scrollHeight;
+        }
+
+        function exportScript() {
+            const content = `《祝福》微短剧剧本\n生成时间：${new Date().toLocaleString()}\n\n大纲：${document.getElementById('plot-outline').value}\n\n` + scriptHistory.join("\n\n");
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `祝福_剧本_${Date.now()}.txt`;
+            a.click();
+        }
+
+        // 检查解锁状态
+        function checkUnlockStatus() {
+            const isUnlocked = localStorage.getItem('luxunGamesUnlocked') === 'true';
+            const unlockStatus = document.getElementById('unlock-status');
+            const donationBtn = document.getElementById('donation-btn');
+            
+            if (isUnlocked) {
+                if (unlockStatus) unlockStatus.textContent = '✅ 已解锁所有内容';
+                if (donationBtn) {
+                    donationBtn.textContent = '已解锁';
+                    donationBtn.disabled = true;
+                }
+            } else {
+                if (unlockStatus) unlockStatus.textContent = '🔒 未解锁';
+            }
+            return isUnlocked;
+        }
+
+        // 显示打赏对话框
+        function showDonationDialog() {
+            // 创建打赏对话框
+            const dialog = document.createElement('div');
+            dialog.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                padding: 20px;
+            `;
+            
+            const dialogContent = document.createElement('div');
+            dialogContent.style.cssText = `
+                background: white;
+                color: #333;
+                padding: 30px;
+                border-radius: 10px;
+                max-width: 500px;
+                width: 100%;
+                text-align: center;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            `;
+            
+            dialogContent.innerHTML = `
+                <h2 style="color: #8b4513; margin-bottom: 20px;">💰 打赏解锁</h2>
+                <p style="margin-bottom: 20px; font-size: 16px;">支付1元及以上，解锁所有游戏内容</p>
+                
+                <div style="margin: 20px 0;">
+                    <img src="收款码.png" alt="收款码" style="max-width: 200px; height: auto; border: 1px solid #ddd; padding: 10px; background: #f9f9f9; border-radius: 8px;">
+                </div>
+                
+                <p style="margin-bottom: 15px; font-size: 14px; color: #666;">请使用微信/支付宝扫描上方二维码</p>
+                <p style="margin-bottom: 25px; font-size: 14px; color: #666;">金额：1元及以上</p>
+                
+                <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
+                    <button onclick="confirmDonation()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                        确认已支付
+                    </button>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 10px 20px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                        取消
+                    </button>
+                </div>
+                
+                <p style="font-size: 12px; color: #999; text-align: left;">
+                    <strong>注意事项：</strong><br>
+                    • 支付完成后点击"确认已支付"解锁内容<br>
+                    • 解锁状态仅在本机有效<br>
+                    • 若解锁失败，请刷新页面重试
+                </p>
+            `;
+            
+            dialog.appendChild(dialogContent);
+            document.body.appendChild(dialog);
+        }
+        
+        // 确认支付
+        function confirmDonation() {
+            // 模拟支付成功
+            localStorage.setItem('luxunGamesUnlocked', 'true');
+            alert('支付成功！已解锁所有游戏内容');
+            
+            // 关闭对话框
+            const dialog = document.querySelector('div[style*="position: fixed;"]');
+            if (dialog) {
+                dialog.remove();
+            }
+            
+            // 更新解锁状态
+            checkUnlockStatus();
+        }
+
+        // 页面加载时检查解锁状态
+        window.addEventListener('DOMContentLoaded', checkUnlockStatus);
+    </script>
+    
+    <!-- 导航脚本 -->
+    <script>
+        // 游戏数据数组 - 按文学集顺序排列（只包含实际存在的文件）
+        const games = [
+            { title: "孔乙己", file: "kongyiji.html" },
+            { title: "药", file: "yao.html" },
+            { title: "明天", file: "mintian.html" },
+            { title: "一件小事", file: "yijianxiaoshi.html" },
+            { title: "故乡", file: "guxiang.html" },
+            { title: "社戏", file: "shexi.html" },
+            { title: "祝福", file: "zhufu.html" },
+            { title: "幸福的家庭", file: "xingfudejiating.html" },
+            { title: "高老夫子", file: "gaolaofuzi.html" },
+            { title: "伤逝", file: "shansi.html" },
+            { title: "离婚", file: "lihun.html" },
+            { title: "补天", file: "butian.html" },
+            { title: "奔月", file: "benyue.html" },
+            { title: "采薇", file: "caiwei.html" },
+            { title: "铸剑", file: "zhujian.html" },
+            { title: "眉间尺", file: "meijianchi.html" },
+            { title: "起死", file: "qishi.html" },
+            { title: "怀旧", file: "huaijiu.html" }
+        ];
+        
+        // 获取当前游戏索引
+        function getCurrentGameIndex() {
+            const currentFile = window.location.pathname.split('/').pop();
+            return games.findIndex(game => game.file === currentFile);
+        }
+        
+        // 导航到上一篇
+        function goToPreviousGame() {
+            const currentIndex = getCurrentGameIndex();
+            if (currentIndex > 0) {
+                const previousGame = games[currentIndex - 1];
+                window.location.href = previousGame.file;
+            }
+        }
+        
+        // 导航到下一篇
+        function goToNextGame() {
+            const currentIndex = getCurrentGameIndex();
+            if (currentIndex < games.length - 1) {
+                const nextGame = games[currentIndex + 1];
+                window.location.href = nextGame.file;
+            }
+        }
+        
+        // 初始化导航
+        function initNavigation() {
+            const currentIndex = getCurrentGameIndex();
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            
+            // 更新上一篇按钮
+            if (currentIndex > 0) {
+                prevBtn.style.display = 'inline-flex';
+                prevBtn.addEventListener('click', goToPreviousGame);
+            } else {
+                prevBtn.style.display = 'none';
+            }
+            
+            // 更新下一篇按钮
+            if (currentIndex < games.length - 1) {
+                nextBtn.style.display = 'inline-flex';
+                nextBtn.addEventListener('click', goToNextGame);
+            } else {
+                nextBtn.style.display = 'none';
+            }
+            
+            console.log('导航初始化完成:', {
+                currentGame: games[currentIndex]?.title,
+                hasPrevious: currentIndex > 0,
+                hasNext: currentIndex < games.length - 1
+            });
+        }
+        
+        // 页面加载完成后初始化导航
+        document.addEventListener('DOMContentLoaded', initNavigation);
+    </script>
+</body>
+</html>

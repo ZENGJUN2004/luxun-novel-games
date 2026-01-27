@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>导航功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .nav-button {
+            background: linear-gradient(145deg, #d4af37, #b8860b);
+            color: white;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>导航功能测试</h1>
+    
+    <div class="test-result" id="config-test">测试配置文件加载...</div>
+    <div class="test-result" id="skills-test">测试技能数据...</div>
+    
+    <h2>导航测试</h2>
+    <button class="nav-button" onclick="testNavigation()">测试导航功能</button>
+    <button class="nav-button" onclick="goToIndex()">返回目录</button>
+    <button class="nav-button" onclick="goToFirstGame()">前往第一篇游戏</button>
+    
+    <div class="test-result" id="nav-test">点击按钮测试导航...</div>
+
+    <script>
+        // 技能管理系统
+        class SkillManagementSystem {
+            constructor() {
+                this.config = null;
+                this.skills = [];
+                this.currentSkill = null;
+                this.init();
+            }
+
+            async init() {
+                try {
+                    // 加载配置文件
+                    const response = await fetch('../skill-management-system/config.json');
+                    this.config = await response.json();
+                    this.skills = this.config.skills;
+                    console.log('技能管理系统初始化成功');
+                    console.log(`加载了 ${this.skills.length} 个技能`);
+                    document.getElementById('config-test').innerHTML = '<strong>配置文件加载成功!</strong>';
+                    document.getElementById('config-test').className = 'test-result success';
+                    document.getElementById('skills-test').innerHTML = `<strong>技能数据加载成功!</strong> 共 ${this.skills.length} 个技能`;
+                    document.getElementById('skills-test').className = 'test-result success';
+                } catch (error) {
+                    console.error('技能管理系统初始化失败:', error);
+                    document.getElementById('config-test').innerHTML = `<strong>配置文件加载失败!</strong> 错误: ${error.message}`;
+                    document.getElementById('config-test').className = 'test-result error';
+                    document.getElementById('skills-test').innerHTML = '<strong>技能数据加载失败!</strong>';
+                    document.getElementById('skills-test').className = 'test-result error';
+                }
+            }
+
+            getSkillByOrder(order) {
+                return this.skills.find(skill => skill.order === order);
+            }
+
+            getPreviousSkill(currentOrder) {
+                if (currentOrder <= 1) return null;
+                return this.getSkillByOrder(currentOrder - 1);
+            }
+
+            getNextSkill(currentOrder) {
+                const maxOrder = Math.max(...this.skills.map(skill => skill.order));
+                if (currentOrder >= maxOrder) return null;
+                return this.getSkillByOrder(currentOrder + 1);
+            }
+        }
+
+        // 初始化技能管理系统
+        const skillSystem = new SkillManagementSystem();
+
+        // 测试导航功能
+        function testNavigation() {
+            if (skillSystem.skills.length > 0) {
+                document.getElementById('nav-test').innerHTML = `<strong>导航功能测试成功!</strong> 技能系统已加载 ${skillSystem.skills.length} 个技能`;
+                document.getElementById('nav-test').className = 'test-result success';
+            } else {
+                document.getElementById('nav-test').innerHTML = '<strong>导航功能测试失败!</strong> 技能系统未加载技能数据';
+                document.getElementById('nav-test').className = 'test-result error';
+            }
+        }
+
+        // 前往目录
+        function goToIndex() {
+            window.location.href = 'index.html';
+        }
+
+        // 前往第一篇游戏
+        function goToFirstGame() {
+            const firstSkill = skillSystem.getSkillByOrder(1);
+            if (firstSkill) {
+                window.location.href = firstSkill.path;
+            } else {
+                document.getElementById('nav-test').innerHTML = '<strong>无法前往第一篇游戏!</strong> 未找到第一篇游戏';
+                document.getElementById('nav-test').className = 'test-result error';
+            }
+        }
+    </script>
+</body>
+</html>

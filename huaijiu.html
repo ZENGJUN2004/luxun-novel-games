@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>怀旧：AI交互式微短剧版</title>
+    <style>
+        :root {
+            --sepia-brown: #704214;
+            --old-paper: #f5f5dc;
+            --ink-black: #2c2c2c;
+            --gold: #d4af37;
+            --silver-gray: #c0c0c0;
+            --bg-dark: #1a1a1a;
+            --shadow-black: #0a0a0a;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--old-paper);
+            font-family: "SimSun", "STSong", serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            overflow: auto;
+            min-height: 100vh;
+        }
+
+        #main-stage {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            padding: 20px;
+            min-height: 100vh;
+            height: auto;
+        }
+
+        #theater-view {
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(145deg, var(--sepia-brown), var(--ink-black));
+            border: 10px solid var(--old-paper);
+            border-radius: 4px;
+            position: relative;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.9), 0 10px 30px rgba(0,0,0,0.5);
+            height: calc(100vh - 40px);
+            overflow: hidden;
+        }
+
+        #drama-status {
+            background: rgba(212, 175, 55, 0.8);
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 2px;
+            display: none;
+        }
+
+        #narrative-overlay {
+            padding: 20px;
+            font-style: italic;
+            color: var(--gold);
+            text-align: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.7), rgba(0,0,0,0.3));
+            border-bottom: 2px solid var(--gold);
+            flex-shrink: 0;
+            font-size: 16px;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        #chat-flow {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--gold) transparent;
+            scroll-behavior: smooth;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(212, 175, 55, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(112, 66, 20, 0.03) 0%, transparent 50%);
+        }
+
+        /* 滚动条美化 */
+        #chat-flow::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #chat-flow::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        #chat-flow::-webkit-scrollbar-thumb {
+            background: var(--gold);
+            border-radius: 4px;
+        }
+
+        #chat-flow::-webkit-scrollbar-thumb:hover {
+            background: #fbbf24;
+        }
+
+        .msg {
+            max-width: 85%;
+            margin-bottom: 25px;
+            padding: 18px 22px;
+            position: relative;
+            line-height: 1.8;
+            font-size: 18px;
+            animation: slideIn 0.5s ease-out;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes slideIn { 
+            from { 
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .msg-auto {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+            border-left: 5px solid var(--gold);
+            margin-right: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .msg-name {
+            display: block;
+            color: var(--gold);
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* 控制面板 */
+        #control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel-box {
+            background: #222;
+            padding: 15px;
+            border: 1px solid #444;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        /* 角色图片 */
+        .character-image {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        
+        .character-image img {
+            width: 120px;
+            height: auto;
+            border-radius: 50%;
+            border: 3px solid var(--gold);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-play {
+            background: linear-gradient(145deg, var(--gold), #b8860b);
+            color: white;
+            padding: 15px;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-play:hover:not(:disabled) {
+            background: linear-gradient(145deg, #b8860b, var(--gold));
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .btn-play:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-play:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        #timer-display {
+            font-size: 32px;
+            color: var(--gold);
+            text-align: center;
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.1);
+        }
+
+        input, textarea, select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #555;
+            color: var(--old-paper);
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            font-family: "SimSun", "STSong", serif;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        label {
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        label:hover {
+            color: var(--gold);
+        }
+
+        input[type="checkbox"] {
+            width: auto;
+            accent-color: var(--gold);
+        }
+
+        /* 角色特定颜色 */
+        .msg-叙述者 { border-left-color: #d4af37; }
+        .msg-同学 { border-left-color: #704214; }
+        .msg-老师 { border-left-color: #c0c0c0; }
+
+        strong {
+            color: var(--gold);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+        /* 导航按钮样式 */
+        .nav-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            min-width: 100px;
+            text-align: center;
+            font-family: "SimSun", "STSong", serif;
+        }
+        
+        .nav-btn-prev {
+            background: linear-gradient(145deg, #704214, #5a3410);
+            color: #f5f5dc;
+        }
+        
+        .nav-btn-prev:hover {
+            background: linear-gradient(145deg, #8a551a, #704214);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(112, 66, 20, 0.4);
+        }
+        
+        .nav-btn-next {
+            background: linear-gradient(145deg, #d4af37, #b8860b);
+            color: #1a1a1a;
+        }
+        
+        .nav-btn-next:hover {
+            background: linear-gradient(145deg, #fbbf24, #d4af37);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+        }
+        
+        .nav-btn-home {
+            background: linear-gradient(145deg, #c0c0c0, #a8a8a8);
+            color: #1a1a1a;
+        }
+        
+        .nav-btn-home:hover {
+            background: linear-gradient(145deg, #d8d8d8, #c0c0c0);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(192, 192, 192, 0.4);
+        }
+        
+        /* 响应式导航 */
+        @media (max-width: 768px) {
+            .nav-container {
+                position: relative;
+                top: auto;
+                right: auto;
+                justify-content: center;
+                margin: 20px 0;
+                flex-wrap: wrap;
+            }
+            
+            .nav-btn {
+                font-size: 12px;
+                padding: 8px 16px;
+                min-width: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航按钮 -->
+    <div class="nav-container">
+        <a href="#" class="nav-btn nav-btn-prev" id="prev-btn">上一篇</a>
+        <a href="#" class="nav-btn nav-btn-next" id="next-btn">下一篇</a>
+        <a href="index.html" class="nav-btn nav-btn-home" id="home-btn">目录</a>
+    </div>
+    
+    <div id="main-stage">
+        <!-- 剧场左侧 - 剧情展示区 -->
+        <div id="theater-view">
+            <div id="drama-status">● 微短剧录制中...</div>
+            <div id="narrative-overlay">书房。叙述者坐在书桌前，窗外的阳光洒在书桌上，他开始回忆过去的学生时代。</div>
+            <div id="chat-flow"></div>
+        </div>
+
+        <!-- 剧场右侧 - 控制面板 -->
+        <div id="control-panel">
+            <div class="panel-box">
+                <strong>🎬 剧场设置</strong>
+                <!-- 叙述者图片 -->
+                <div class="character-image">
+                    <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20intellectual%20in%20traditional%20clothing%2C%20sitting%20at%20desk%2C%20reading%20book%2C%20vintage%20style%2C%20portrait&image_size=square" alt="叙述者">
+                </div>
+                <br>
+           
+                核心冲突 (剧本大纲):
+                <textarea id="plot-outline" rows="4">叙述者回忆学生时代的生活，包括与同学的交往、老师的教导、校园里的种种往事。通过回忆，展现了当时知识分子的精神状态和社会环境，表达了对过去美好时光的怀念和对现实的思考。</textarea>
+                <br><br>
+                选择场景：
+                <select id="scene-select" style="width:100%; margin-top:5px;">
+                    <option value="书房">书房</option>
+                    <option value="校园">校园</option>
+                    <option value="课堂">课堂</option>
+                    <option value="校外">校外</option>
+                </select>
+                <br><br>
+                选择角色：<br>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; background:rgba(255,255,255,0.05); padding:10px; border-radius:6px;">
+                    <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" name="character" value="叙述者" checked> 叙述者</label>
+                    <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" name="character" value="同学" checked> 同学</label>
+                    <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" name="character" value="老师"> 老师</label>
+                </div>
+            </div>
+
+            <div class="panel-box">
+                <strong>⏱ 剧集计时</strong>
+                <div id="timer-display">05:00</div>
+                <button class="btn-play" id="start-btn" onclick="startDrama()">开始生成5分钟短剧</button>
+            </div>
+
+            <div class="panel-box">
+                <strong>日志与导出</strong><br>
+                <button onclick="exportScript()" style="width:100%; margin-top:10px;">导出本集剧本</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 角色定义
+        const CHARACTERS = {
+            "叙述者": {
+                personality: "怀旧、敏感、知识分子、多愁善感",
+                background: "成年后的知识分子，回忆学生时代的生活",
+                mannerisms: "读书、沉思、望向窗外",
+                speechStyle: "抒情、细腻、怀旧",
+                catchphrases: ["那时候...", "记得有一次...", "现在想来..."],
+                relationships: {
+                    "同学": "回忆对象",
+                    "老师": "回忆对象"
+                }
+            },
+            "同学": {
+                personality: "活泼、单纯、热情、青春",
+                background: "叙述者学生时代的同学",
+                mannerisms: "嬉笑、打闹、讨论功课",
+                speechStyle: "活泼、直白、青春",
+                catchphrases: ["走啊，一起去玩！", "这个题目怎么做？", "你听说了吗？"],
+                relationships: {
+                    "叙述者": "同学",
+                    "老师": "学生"
+                }
+            },
+            "老师": {
+                personality: "严肃、博学、传统、教导",
+                background: "叙述者学生时代的老师",
+                mannerisms: "拿课本、批改作业、讲课",
+                speechStyle: "严肃、教导、传统",
+                catchphrases: ["同学们，安静！", "这个问题很重要", "要好好学习啊"],
+                relationships: {
+                    "叙述者": "老师",
+                    "同学": "老师"
+                }
+            }
+        };
+
+        // 场景定义
+        const SCENES = {
+            "书房": {
+                description: "安静的书房，书架上摆满了书，书桌上有一盏台灯和一些纸张",
+                atmosphere: "安静、怀旧、思考",
+                typicalEvents: "叙述者读书，回忆往事，写下回忆"
+            },
+            "校园": {
+                description: "古老的校园，有高大的树木，学生们在校园里走动",
+                atmosphere: "青春、活泼、充满希望",
+                typicalEvents: "同学间嬉笑打闹，讨论功课，一起散步"
+            },
+            "课堂": {
+                description: "传统的教室，黑板上写满了字，学生们坐在课桌前",
+                atmosphere: "严肃、学习、专注",
+                typicalEvents: "老师讲课，学生提问，做笔记"
+            },
+            "校外": {
+                description: "学校外面的街道，有小店铺，学生们放学后来这里",
+                atmosphere: "热闹、休闲、自由",
+                typicalEvents: "同学聚餐，逛商店，讨论未来"
+            }
+        };
+
+        // 游戏状态
+        let isPlaying = false;
+        let timeRemaining = 300;
+        let scriptHistory = [];
+        let timerInterval;
+        let currentScene = "书房";
+        let selectedCharacters = ["叙述者", "同学"];
+
+        // 初始化
+        function initSelection() {
+            const sceneSelect = document.getElementById('scene-select');
+            sceneSelect.addEventListener('change', () => {
+                currentScene = sceneSelect.value;
+                updateSceneDescription();
+            });
+            
+            const checkboxes = document.querySelectorAll('input[name="character"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectedCharacters);
+            });
+            
+            updateSceneDescription();
+        }
+        
+        function updateSelectedCharacters() {
+            const checkboxes = document.querySelectorAll('input[name="character"]');
+            selectedCharacters = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+            if (selectedCharacters.length === 0) {
+                const firstCheckbox = checkboxes[0];
+                firstCheckbox.checked = true;
+                selectedCharacters = [firstCheckbox.value];
+            }
+        }
+        
+        function updateSceneDescription() {
+            const overlay = document.getElementById('narrative-overlay');
+            const sceneInfo = SCENES[currentScene];
+            overlay.textContent = `${currentScene}。${sceneInfo.atmosphere}。${sceneInfo.typicalEvents}`;
+        }
+
+        // 调用AI
+        async function callAI(system, user) {
+            const key = localStorage.getItem('siliconFlowApiKey');
+            if (!key) {
+                alert('请先在目录页输入并保存硅基流动 API Key');
+                window.location.href = 'index.html';
+                return null;
+            }
+            try {
+                const resp = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${key}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: "deepseek-ai/DeepSeek-V3",
+                        messages: [{role:"system", content:system}, {role:"user", content:user}],
+                        temperature: 0.85
+                    })
+                });
+                const data = await resp.json();
+                return data.choices[0].message.content;
+            } catch(e) {
+                console.error("AI调用失败:", e);
+                alert('API 调用失败，请检查 API Key 是否正确');
+                return null;
+            }
+        }
+
+        // 开始游戏
+        async function startDrama() {
+            const key = localStorage.getItem('siliconFlowApiKey');
+            if(!key) {
+                alert('请先在目录页输入并保存硅基流动 API Key');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            isPlaying = true;
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('drama-status').style.display = 'block';
+            
+            startTimer();
+            dramaLoop();
+        }
+
+        // 计时器
+        function startTimer() {
+            timeRemaining = 300;
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                const m = Math.floor(timeRemaining/60);
+                const s = timeRemaining%60;
+                document.getElementById('timer-display').textContent = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                if(timeRemaining <= 0) stopDrama();
+            }, 1000);
+        }
+
+        // 停止游戏
+        function stopDrama() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            document.getElementById('drama-status').textContent = "● 剧集录制完成";
+            document.getElementById('start-btn').disabled = false;
+        }
+
+        // 剧情循环
+        async function dramaLoop() {
+            while(isPlaying) {
+                const outline = document.getElementById('plot-outline').value;
+                const recentHistory = scriptHistory.slice(-5).join("\n");
+                
+                // 生成导演指令
+                const directorPrompt = `你是微短剧导演。剧本大纲：${outline}。当前场景：${currentScene}。最近对话：${recentHistory}。从【${selectedCharacters.join(", ")}】中选1-2个角色，给出冲突指令。格式：角色名|指令。`;
+                
+                const direction = await callAI("只输出'角色名|指令'，不输出其他。", directorPrompt);
+                
+                if(direction && direction.includes('|')) {
+                    const [actor, instruction] = direction.split('|');
+                    
+                    // 生成角色对话
+                    const actorPrompt = `你是鲁迅笔下的《${actor}》。性格：${CHARACTERS[actor].personality}。当前场景：${currentScene}。导演指令：${instruction}。要求：抒情、细腻、怀旧。输出对话、动作、神态。不超过80字。`;
+                    
+                    const content = await callAI(actorPrompt, "请开始表演：");
+                    
+                    if(content) {
+                        appendMsg(actor, content);
+                        scriptHistory.push(`${actor}: ${content}`);
+                    }
+                }
+                
+                // 等待6-10秒
+                await new Promise(r => setTimeout(r, 6000 + Math.random() * 4000));
+            }
+        }
+
+        // 添加对话
+        function appendMsg(name, text) {
+            const flow = document.getElementById('chat-flow');
+            const div = document.createElement('div');
+            div.className = `msg msg-auto msg-${name}`;
+            div.innerHTML = `<span class="msg-name">${name}</span>${text}`;
+            flow.appendChild(div);
+            
+            // 滚动到底部
+            requestAnimationFrame(() => {
+                flow.scrollTop = flow.scrollHeight;
+            });
+        }
+
+        // 导出剧本
+        function exportScript() {
+            if(scriptHistory.length === 0) {
+                alert("还没有生成剧本内容！");
+                return;
+            }
+            
+            let charactersInfo = "## 人物信息\n\n";
+            for(const [name, info] of Object.entries(CHARACTERS)) {
+                charactersInfo += `### ${name}\n`;
+                charactersInfo += `- **性格**：${info.personality}\n`;
+                charactersInfo += `- **身份**：${info.background}\n`;
+                charactersInfo += `- **语言风格**：${info.speechStyle}\n`;
+                charactersInfo += `- **口头禅**：${info.catchphrases.join('，')}\n\n`;
+            }
+            
+            let scenesInfo = "## 场景信息\n\n";
+            for(const [name, info] of Object.entries(SCENES)) {
+                scenesInfo += `### ${name}\n`;
+                scenesInfo += `- **描述**：${info.description}\n`;
+                scenesInfo += `- **氛围**：${info.atmosphere}\n`;
+                scenesInfo += `- **典型事件**：${info.typicalEvents}\n\n`;
+            }
+            
+            const scriptText = `# 怀旧：AI交互式微短剧\n\n## 剧本大纲\n${document.getElementById('plot-outline').value}\n\n${charactersInfo}${scenesInfo}\n## 对话内容\n\n${scriptHistory.join('\n\n')}\n\n---\n\n生成时间：${new Date().toLocaleString()}`;
+            
+            const blob = new Blob([scriptText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `怀旧剧本_${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', initSelection);
+    </script>
+    
+    <!-- 导航脚本 -->
+    <script>
+        // 游戏数据数组 - 按文学集顺序排列（只包含实际存在的文件）
+        const games = [
+            { title: "孔乙己", file: "kongyiji.html" },
+            { title: "药", file: "yao.html" },
+            { title: "明天", file: "mintian.html" },
+            { title: "一件小事", file: "yijianxiaoshi.html" },
+            { title: "故乡", file: "guxiang.html" },
+            { title: "社戏", file: "shexi.html" },
+            { title: "祝福", file: "zhufu.html" },
+            { title: "幸福的家庭", file: "xingfudejiating.html" },
+            { title: "高老夫子", file: "gaolaofuzi.html" },
+            { title: "伤逝", file: "shansi.html" },
+            { title: "离婚", file: "lihun.html" },
+            { title: "补天", file: "butian.html" },
+            { title: "奔月", file: "benyue.html" },
+            { title: "采薇", file: "caiwei.html" },
+            { title: "铸剑", file: "zhujian.html" },
+            { title: "眉间尺", file: "meijianchi.html" },
+            { title: "起死", file: "qishi.html" },
+            { title: "怀旧", file: "huaijiu.html" }
+        ];
+        
+        // 获取当前游戏索引
+        function getCurrentGameIndex() {
+            const currentFile = window.location.pathname.split('/').pop();
+            return games.findIndex(game => game.file === currentFile);
+        }
+        
+        // 导航到上一篇
+        function goToPreviousGame() {
+            const currentIndex = getCurrentGameIndex();
+            if (currentIndex > 0) {
+                const previousGame = games[currentIndex - 1];
+                window.location.href = previousGame.file;
+            }
+        }
+        
+        // 导航到下一篇
+        function goToNextGame() {
+            const currentIndex = getCurrentGameIndex();
+            if (currentIndex < games.length - 1) {
+                const nextGame = games[currentIndex + 1];
+                window.location.href = nextGame.file;
+            }
+        }
+        
+        // 初始化导航
+        function initNavigation() {
+            const currentIndex = getCurrentGameIndex();
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            
+            // 更新上一篇按钮
+            if (currentIndex > 0) {
+                prevBtn.style.display = 'inline-flex';
+                prevBtn.addEventListener('click', goToPreviousGame);
+            } else {
+                prevBtn.style.display = 'none';
+            }
+            
+            // 更新下一篇按钮
+            if (currentIndex < games.length - 1) {
+                nextBtn.style.display = 'inline-flex';
+                nextBtn.addEventListener('click', goToNextGame);
+            } else {
+                nextBtn.style.display = 'none';
+            }
+            
+            console.log('导航初始化完成:', {
+                currentGame: games[currentIndex]?.title,
+                hasPrevious: currentIndex > 0,
+                hasNext: currentIndex < games.length - 1
+            });
+        }
+        
+        // 页面加载完成后初始化导航
+        document.addEventListener('DOMContentLoaded', initNavigation);
+    </script>
+</body>
+</html>

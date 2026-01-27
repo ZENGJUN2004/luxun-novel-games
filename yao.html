@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>药：鲁迅小说互动游戏</title>
+    <style>
+        :root {
+            --wood-dark: #2c1e14;
+            --wood-light: #8b6914;
+            --paper: #f4e9d8;
+            --blood: #8b0000;
+            --gold: #d4af37;
+            --bg-dark: #1a1a1a;
+            --earth: #d2b48c;
+            --earth-dark: #8b4513;
+            --sky: #2c3e50;
+            --moonlight: #f0f8ff;
+            --shadow: #000000;
+            --red: #ff4444;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--paper);
+            font-family: "SimSun", "STSong", serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            overflow: auto;
+            min-height: 100vh;
+        }
+
+        #main-stage {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            padding: 20px;
+            min-height: 100vh;
+            height: auto;
+        }
+
+        #theater-view {
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(145deg, var(--earth-dark), var(--wood-dark));
+            border: 10px solid var(--wood-dark);
+            border-radius: 4px;
+            height: calc(100vh - 120px);
+        }
+
+        /* 导航栏 */
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(139, 69, 19, 0.2);
+            border-radius: 8px;
+            border: 1px solid var(--wood-dark);
+        }
+
+        .nav-button {
+            background: linear-gradient(145deg, var(--gold), #b8860b);
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-button:hover {
+            background: linear-gradient(145deg, #b8860b, var(--gold));
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .nav-button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #theater-view {
+            position: relative;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
+            min-height: 500px;
+        }
+
+        #drama-status {
+            background: rgba(139, 0, 0, 0.8);
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 2px;
+            display: none;
+        }
+
+        #narrative-overlay {
+            padding: 20px;
+            font-style: italic;
+            color: var(--gold);
+            text-align: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.7), rgba(0,0,0,0.3));
+            border-bottom: 2px solid var(--wood-light);
+            flex-shrink: 0;
+            font-size: 16px;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        #chat-flow {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--wood-light) transparent;
+            scroll-behavior: smooth;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(240, 248, 255, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(139, 0, 0, 0.03) 0%, transparent 50%);
+        }
+
+        /* 滚动条美化 */
+        #chat-flow::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #chat-flow::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        #chat-flow::-webkit-scrollbar-thumb {
+            background: var(--wood-light);
+            border-radius: 4px;
+        }
+
+        #chat-flow::-webkit-scrollbar-thumb:hover {
+            background: var(--gold);
+        }
+
+        .msg {
+            max-width: 85%;
+            margin-bottom: 25px;
+            padding: 18px 22px;
+            position: relative;
+            line-height: 1.8;
+            font-size: 18px;
+            animation: slideIn 0.5s ease-out;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes slideIn { 
+            from { 
+                opacity: 0; 
+                transform: translateY(20px) scale(0.95); 
+            } 
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            } 
+        }
+
+        .msg-auto {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+            border-left: 5px solid var(--gold);
+            margin-right: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .msg-name {
+            display: block;
+            color: var(--gold);
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* 添加民国风格的装饰边框 */
+        #theater-view {
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(145deg, var(--earth-dark), var(--wood-dark));
+            border: 10px solid var(--wood-dark);
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 100px rgba(0,0,0,0.9),
+                0 10px 30px rgba(0,0,0,0.5);
+            height: calc(100vh - 40px);
+            overflow: hidden;
+        }
+
+        /* 添加标题装饰 */
+        strong {
+            color: var(--gold);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        #control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel-box {
+            background: #222;
+            padding: 15px;
+            border: 1px solid #444;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        /* 角色图片样式 */
+        .character-image {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        
+        .character-image img {
+            width: 120px;
+            height: auto;
+            border-radius: 50%;
+            border: 3px solid var(--gold);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-play {
+            background: linear-gradient(145deg, var(--blood), #660000);
+            color: white;
+            padding: 15px;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-play:hover:not(:disabled) {
+            background: linear-gradient(145deg, #660000, var(--blood));
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(139, 0, 0, 0.4);
+        }
+
+        .btn-play:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-play:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        #timer-display {
+            font-size: 32px;
+            color: var(--gold);
+            text-align: center;
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.1);
+        }
+
+        input, textarea, select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #555;
+            color: var(--paper);
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            font-family: "SimSun", "STSong", serif;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        label {
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        label:hover {
+            color: var(--gold);
+        }
+
+        input[type="checkbox"] {
+            width: auto;
+            accent-color: var(--gold);
+        }
+
+        /* 角色特定颜色 */
+        .msg-华老栓 { border-left-color: var(--earth); }
+        .msg-华大妈 { border-left-color: var(--earth-dark); }
+        .msg-小栓 { border-left-color: var(--wood-light); }
+        .msg-康大叔 { border-left-color: var(--blood); }
+        .msg-夏瑜 { border-left-color: var(--sky); }
+        .msg-夏四奶奶 { border-left-color: var(--red); }
+        .msg-花白胡子 { border-left-color: var(--gold); }
+        .msg-驼背五少爷 { border-left-color: var(--wood-dark); }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <div class="navigation">
+        <button class="nav-button" onclick="navigateToPrevious()">上一篇</button>
+        <a href="index.html" class="nav-button">目录</a>
+        <button class="nav-button" onclick="navigateToNext()">下一篇</button>
+    </div>
+
+    <div id="main-stage">
+        <!-- 剧场左侧 - 剧情展示区 -->
+        <div id="theater-view">
+            <div id="drama-status">● 微短剧录制中...</div>
+            <div id="narrative-overlay">秋天的后半夜，月亮下去了，太阳还没有出，只剩下一片乌蓝的天；除了夜游的东西，什么都睡着。</div>
+            <div id="chat-flow"></div>
+        </div>
+
+        <!-- 剧场右侧 - 控制面板 -->
+        <div id="control-panel">
+            <div class="panel-box">
+                <strong>🎬 剧场设置</strong>
+                <!-- 角色图片 -->
+                <div class="character-image">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%238b4513'/%3E%3Ctext x='60' y='70' text-anchor='middle' fill='%23f4e9d8' font-size='16' font-family='serif'%3E药%3C/text%3E%3C/svg%3E" alt="药">
+                </div>
+                <br><br>
+                核心冲突 (剧本大纲):
+                <textarea id="plot-outline" rows="4">华老栓为生病的儿子小栓买人血馒头治病，而人血馒头是用革命烈士夏瑜的血制成的。夏瑜为革命牺牲却不被理解，最终小栓还是死去，暴露了封建社会的黑暗和群众的麻木不仁。</textarea>
+                <br><br>
+                选择场景：
+                <select id="scene-select" style="width:100%; margin-top:5px;">
+                    <option value="茶馆之夜">茶馆之夜</option>
+                    <option value="丁字街头">丁字街头</option>
+                    <option value="茶馆内">茶馆内</option>
+                    <option value="刑场">刑场</option>
+                    <option value="坟场">坟场</option>
+                </select>
+                <br><br>
+                选择角色：<br>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; background:rgba(255,255,255,0.05); padding:10px; border-radius:6px;">
+                    <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" name="character" value="华老栓" checked> 华老栓</label>
+                    <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" name="character" value="华大妈"> 华大妈</label>
+                    <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" name="character" value="小栓"> 小栓</label>
+                    <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" name="character" value="康大叔"> 康大叔</label>
+                    <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" name="character" value="夏瑜"> 夏瑜</label>
+                    <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" name="character" value="夏四奶奶"> 夏四奶奶</label>
+                    <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" name="character" value="花白胡子"> 花白胡子</label>
+                    <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" name="character" value="驼背五少爷"> 驼背五少爷</label>
+                </div>
+            </div>
+
+            <div class="panel-box">
+                <strong>⏱ 剧集计时</strong>
+                <div id="timer-display">05:00</div>
+                <button class="btn-play" id="start-btn" onclick="startDrama()">开始生成5分钟短剧</button>
+            </div>
+
+            <div class="panel-box">
+                <strong>日志与导出</strong><br>
+                <button onclick="exportScript()" style="width:100%; margin-top:10px;">导出本集剧本</button>
+            </div>
+
+            <div class="panel-box">
+                <strong>💰 打赏解锁</strong>
+                <p>支付1元及以上，解锁所有游戏内容</p>
+                <button class="btn-play" onclick="showDonationDialog()" id="donation-btn">打赏解锁</button>
+                <div id="unlock-status" style="margin-top: 10px; text-align: center; color: var(--gold);"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 详细的角色定义
+        const CHARACTERS = {
+            "华老栓": {
+                personality: "朴实、勤劳、爱子心切、麻木",
+                background: "茶馆老板，为了给儿子治病不惜买人血馒头",
+                mannerisms: "颤抖、小心翼翼、焦虑",
+                speechStyle: "朴实、简短、急切",
+                catchphrases: ["你给我罢", "这给谁治病的呀", "小栓的爹，你就去么"],
+                relationships: {
+                    "华大妈": "夫妻",
+                    "小栓": "父子",
+                    "康大叔": "买卖关系",
+                    "夏瑜": "间接关系"
+                }
+            },
+            "华大妈": {
+                personality: "善良、传统、忧心忡忡",
+                background: "华老栓的妻子，关心儿子的病情",
+                mannerisms: "叹气、担忧、忙碌",
+                speechStyle: "温和、担忧、传统",
+                catchphrases: ["小栓的爹，你就去么", "小栓进来罢", "吃下去罢，——病便好了"],
+                relationships: {
+                    "华老栓": "夫妻",
+                    "小栓": "母子",
+                    "夏四奶奶": "同病相怜"
+                }
+            },
+            "小栓": {
+                personality: "体弱、沉默、无助",
+                background: "华老栓的儿子，患有肺病",
+                mannerisms: "咳嗽、虚弱、沉默",
+                speechStyle: "微弱、简短、无力",
+                catchphrases: ["店么？你娘会安排的", "睡一会罢", "咳咳咳"],
+                relationships: {
+                    "华老栓": "父子",
+                    "华大妈": "母子",
+                    "康大叔": "间接关系"
+                }
+            },
+            "康大叔": {
+                personality: "粗鲁、残忍、贪婪",
+                background: "刽子手，卖人血馒头",
+                mannerisms: "粗鲁、蛮横、不耐烦",
+                speechStyle: "粗野、蛮横、讽刺",
+                catchphrases: ["一手交钱，一手交货", "怕什么？怎的不拿！", "这老东西……"],
+                relationships: {
+                    "华老栓": "买卖关系",
+                    "夏瑜": "刽子手与犯人",
+                    "花白胡子": "熟人"
+                }
+            },
+            "夏瑜": {
+                personality: "革命、理想、勇敢、孤独",
+                background: "革命烈士，为推翻封建统治而牺牲",
+                mannerisms: "坚定、激昂、从容",
+                speechStyle: "激昂、理想、坚定",
+                catchphrases: ["这大清的天下是我们大家的", "可怜可怜我罢", "你们这伙奴才！"],
+                relationships: {
+                    "康大叔": "犯人与刽子手",
+                    "夏四奶奶": "母子",
+                    "华老栓": "间接关系"
+                }
+            },
+            "夏四奶奶": {
+                personality: "悲伤、迷信、传统",
+                background: "夏瑜的母亲，为儿子上坟",
+                mannerisms: "哭泣、悲伤、迷信",
+                speechStyle: "悲伤、迷信、传统",
+                catchphrases: ["瑜儿，他们都冤枉了你", "你还是忘不了，伤心", "这是怎么一回事呢"],
+                relationships: {
+                    "夏瑜": "母子",
+                    "华大妈": "同病相怜"
+                }
+            },
+            "花白胡子": {
+                personality: "麻木、冷漠、看热闹",
+                background: "茶馆常客，喜欢议论是非",
+                mannerisms: "摇头、议论、冷漠",
+                speechStyle: "冷漠、议论、麻木",
+                catchphrases: ["疯了", "可怜", "这大清的天下是我们大家的"],
+                relationships: {
+                    "华老栓": "熟人",
+                    "康大叔": "熟人",
+                    "驼背五少爷": "熟人"
+                }
+            },
+            "驼背五少爷": {
+                personality: "麻木、无聊、跟风",
+                background: "茶馆常客，喜欢凑热闹",
+                mannerisms: "驼背、无聊、跟风",
+                speechStyle: "无聊、跟风、麻木",
+                catchphrases: ["炒米粥么？", "好香！你们吃什么点心呀？", "疯了疯了"],
+                relationships: {
+                    "华老栓": "熟人",
+                    "花白胡子": "熟人",
+                    "康大叔": "熟人"
+                }
+            }
+        };
+
+        // 简化的AGENTS对象，用于兼容原有代码
+        const AGENTS = {};
+        for (const [name, info] of Object.entries(CHARACTERS)) {
+            AGENTS[name] = `${info.personality}，${info.catchphrases.join('，')}`;
+        }
+
+        // 场景定义
+        const SCENES = {
+            "茶馆之夜": {
+                description: "秋天的后半夜，茶馆内，华老栓夫妇准备去买人血馒头",
+                atmosphere: "压抑、紧张、担忧",
+                typicalEvents: "华老栓起床、华大妈担忧、准备洋钱、出发买药"
+            },
+            "丁字街头": {
+                description: "丁字街头，华老栓买人血馒头的地方",
+                atmosphere: "阴森、恐怖、紧张",
+                typicalEvents: "华老栓等待、康大叔出现、交易人血馒头、群众围观"
+            },
+            "茶馆内": {
+                description: "茶馆内，小栓吃人人血馒头，茶客议论",
+                atmosphere: "压抑、麻木、讽刺",
+                typicalEvents: "小栓吃药、康大叔讲述夏瑜、茶客议论、小栓咳嗽"
+            },
+            "刑场": {
+                description: "刑场，夏瑜被杀害的地方",
+                atmosphere: "悲壮、凄凉、麻木",
+                typicalEvents: "夏瑜就义、群众围观、康大叔行刑、夏瑜呐喊"
+            },
+            "坟场": {
+                description: "坟场，华大妈和夏四奶奶上坟",
+                atmosphere: "凄凉、悲伤、讽刺",
+                typicalEvents: "华大妈上坟、夏四奶奶上坟、乌鸦飞、花环出现"
+            }
+        };
+
+        // 游戏状态变量
+        let isPlaying = false;
+        let timeRemaining = 300; // 5分钟，单位：秒
+        let scriptHistory = [];
+        let timerInterval;
+        let currentScene = "茶馆之夜"; // 当前选择的场景
+        let selectedCharacters = ["华老栓"]; // 当前选择的角色
+
+        // 初始化场景和角色选择
+        function initSelection() {
+            // 监听场景选择变化
+            const sceneSelect = document.getElementById('scene-select');
+            sceneSelect.addEventListener('change', () => {
+                currentScene = sceneSelect.value;
+                // 更新场景描述
+                updateSceneDescription();
+            });
+            
+            // 监听角色选择变化
+            const checkboxes = document.querySelectorAll('input[name="character"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectedCharacters);
+            });
+            
+            // 初始化场景描述
+            updateSceneDescription();
+        }
+        
+        // 更新选中的角色列表
+        function updateSelectedCharacters() {
+            const checkboxes = document.querySelectorAll('input[name="character"]:checked');
+            selectedCharacters = Array.from(checkboxes).map(cb => cb.value);
+            
+            // 确保至少选择一个角色
+            if (selectedCharacters.length === 0) {
+                // 默认选中华老栓
+                const华老栓Checkbox = document.querySelector('input[name="character"][value="华老栓"]');
+                if (华老栓Checkbox) {
+                    华老栓Checkbox.checked = true;
+                    selectedCharacters = ["华老栓"];
+                }
+            }
+        }
+        
+        // 更新场景描述
+        function updateSceneDescription() {
+            const overlay = document.getElementById('narrative-overlay');
+            const sceneInfo = SCENES[currentScene];
+            if (sceneInfo) {
+                overlay.textContent = `${currentScene}。${sceneInfo.atmosphere}。`;
+            } else {
+                overlay.textContent = `${currentScene}。`;
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initSelection);
+
+        // 从localStorage获取API Key
+        function getApiKey() {
+            const key = localStorage.getItem('siliconFlowApiKey');
+            if (!key) {
+                alert('请先在目录页设置API Key');
+                window.location.href = 'index.html';
+                return null;
+            }
+            return key;
+        }
+
+        // 调用AI生成内容
+        async function callAI(system, user) {
+            const key = getApiKey();
+            if(!key) return null;
+            try {
+                const resp = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${key}`, 
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify({
+                        model: "deepseek-ai/DeepSeek-V3",
+                        messages: [{role:"system", content:system}, {role:"user", content:user}],
+                        temperature: 0.85
+                    })
+                });
+                const data = await resp.json();
+                return data.choices[0].message.content;
+            } catch(e) {
+                console.error("AI调用失败:", e);
+                return null;
+            }
+        }
+
+        // 开始游戏
+        async function startDrama() {
+            const key = getApiKey();
+            if(!key) { 
+                return; 
+            }
+            
+            isPlaying = true;
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('drama-status').style.display = 'block';
+            
+            startTimer();
+            dramaLoop();
+        }
+
+        // 开始计时
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                let m = Math.floor(timeRemaining/60);
+                let s = timeRemaining%60;
+                document.getElementById('timer-display').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                if(timeRemaining <= 0) stopDrama();
+            }, 1000);
+        }
+
+        // 停止游戏
+        function stopDrama() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            document.getElementById('drama-status').innerText = "● 剧集录制完成";
+            document.getElementById('start-btn').disabled = false;
+        }
+
+        // 剧情循环
+        async function dramaLoop() {
+            while(isPlaying) {
+                const outline = document.getElementById('plot-outline').value;
+                const recentHistory = scriptHistory.slice(-5).join("\n");
+                
+                // 生成导演指令 - 使用当前选择的角色和场景
+                const directorPrompt = `你是一位微短剧导演。当前剧本大纲：${outline}。
+                当前场景：${currentScene}。
+                已知最近5句对话：${recentHistory}。
+                请根据剧情张力，从【${selectedCharacters.join(", ")}】中挑选1-2个角色，并给出一个本段剧情的冲突指令。
+                返回格式必须为：角色名|指令。例如：华老栓|准备去买人血馒头。`;
+
+                const direction = await callAI("你只输出'角色名|指令'，不输出任何其他废话。", directorPrompt);
+                
+                if(direction && direction.includes('|')) {
+                    const [actor, instruction] = direction.split('|');
+                    
+                    // 生成角色对话
+                    const actorPrompt = `你是鲁迅小说《药》中的${actor}。性格：${AGENTS[actor]}。
+                    当前场景：${currentScene}。
+                    导演指令：${instruction}。
+                    要求：使用适合角色身份的语言，华老栓夫妇用朴实担忧的语言，康大叔用粗野的语言，夏瑜用激昂的语言，茶客用麻木的语言。输出对话、动作、神态。不要超过80字。`;
+
+                    const content = await callAI(actorPrompt, "请开始表演：");
+                    
+                    if(content) {
+                        appendMsg(actor, content);
+                        scriptHistory.push(`${actor}: ${content}`);
+                    }
+                }
+                
+                // 等待6-10秒生成下一段对话
+                await new Promise(r => setTimeout(r, 6000 + Math.random() * 4000));
+            }
+        }
+
+        // 添加消息到对话流
+        function appendMsg(name, text) {
+            const flow = document.getElementById('chat-flow');
+            const div = document.createElement('div');
+            div.className = `msg msg-auto msg-${name.toLowerCase()}`;
+            div.innerHTML = `<span class="msg-name">${name}</span>${text}`;
+            flow.appendChild(div);
+            
+            // 平滑滚动到底部
+            requestAnimationFrame(() => {
+                flow.scrollTo({
+                    top: flow.scrollHeight,
+                    behavior: 'smooth'
+                });
+            });
+            
+            // 更新场景描述（如果对话中包含）
+            if(text.includes('（')) {
+                const env = text.match(/（(.*?)）/);
+                if(env) {
+                    document.getElementById('narrative-overlay').innerText = env[1];
+                }
+            }
+        }
+
+        // 导出剧本 - 增强版，包含详细人物和场景信息
+        function exportScript() {
+            if(scriptHistory.length === 0) {
+                alert("还没有生成任何剧本内容！");
+                return;
+            }
+            
+            // 生成详细的人物信息
+            let charactersInfo = "## 人物信息\n\n";
+            for (const [name, info] of Object.entries(CHARACTERS)) {
+                charactersInfo += `### ${name}\n`;
+                charactersInfo += `- **性格**：${info.personality}\n`;
+                charactersInfo += `- **身份**：${info.background}\n`;
+                charactersInfo += `- **语言风格**：${info.speechStyle}\n`;
+                charactersInfo += `- **口头禅**：${info.catchphrases.join('，')}\n`;
+                charactersInfo += `- **行为模式**：${info.mannerisms}\n\n`;
+            }
+            
+            // 生成场景信息
+            let scenesInfo = "## 场景信息\n\n";
+            for (const [name, info] of Object.entries(SCENES)) {
+                scenesInfo += `### ${name}\n`;
+                scenesInfo += `- **描述**：${info.description}\n`;
+                scenesInfo += `- **氛围**：${info.atmosphere}\n`;
+                scenesInfo += `- **典型事件**：${info.typicalEvents}\n\n`;
+            }
+            
+            const scriptText = `# 药：鲁迅小说互动游戏\n\n## 剧本大纲\n${document.getElementById('plot-outline').value}\n\n${charactersInfo}${scenesInfo}\n## 对话内容\n\n\n${scriptHistory.join("\n\n")}\n\n---\n\n生成时间：${new Date().toLocaleString()}`;
+            
+            // 创建下载链接
+            const blob = new Blob([scriptText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `药剧本_${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 检查解锁状态
+        function checkUnlockStatus() {
+            const isUnlocked = localStorage.getItem('luxunGamesUnlocked') === 'true';
+            const unlockStatus = document.getElementById('unlock-status');
+            const donationBtn = document.getElementById('donation-btn');
+            
+            if (isUnlocked) {
+                if (unlockStatus) unlockStatus.textContent = '✅ 已解锁所有内容';
+                if (donationBtn) {
+                    donationBtn.textContent = '已解锁';
+                    donationBtn.disabled = true;
+                }
+            } else {
+                if (unlockStatus) unlockStatus.textContent = '🔒 未解锁';
+            }
+            return isUnlocked;
+        }
+
+        // 显示打赏对话框
+        function showDonationDialog() {
+            // 创建打赏对话框
+            const dialog = document.createElement('div');
+            dialog.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                padding: 20px;
+            `;
+            
+            const dialogContent = document.createElement('div');
+            dialogContent.style.cssText = `
+                background: white;
+                color: #333;
+                padding: 30px;
+                border-radius: 10px;
+                max-width: 500px;
+                width: 100%;
+                text-align: center;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            `;
+            
+            dialogContent.innerHTML = `
+                <h2 style="color: #8b4513; margin-bottom: 20px;">💰 打赏解锁</h2>
+                <p style="margin-bottom: 20px; font-size: 16px;">支付1元及以上，解锁所有游戏内容</p>
+                
+                <div style="margin: 20px 0;">
+                    <img src="收款码.png" alt="收款码" style="max-width: 200px; height: auto; border: 1px solid #ddd; padding: 10px; background: #f9f9f9; border-radius: 8px;">
+                </div>
+                
+                <p style="margin-bottom: 15px; font-size: 14px; color: #666;">请使用微信/支付宝扫描上方二维码</p>
+                <p style="margin-bottom: 25px; font-size: 14px; color: #666;">金额：1元及以上</p>
+                
+                <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
+                    <button onclick="confirmDonation()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                        确认已支付
+                    </button>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 10px 20px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                        取消
+                    </button>
+                </div>
+                
+                <p style="font-size: 12px; color: #999; text-align: left;">
+                    <strong>注意事项：</strong><br>
+                    • 支付完成后点击"确认已支付"解锁内容<br>
+                    • 解锁状态仅在本机有效<br>
+                    • 若解锁失败，请刷新页面重试
+                </p>
+            `;
+            
+            dialog.appendChild(dialogContent);
+            document.body.appendChild(dialog);
+        }
+        
+        // 确认支付
+        function confirmDonation() {
+            // 模拟支付成功
+            localStorage.setItem('luxunGamesUnlocked', 'true');
+            alert('支付成功！已解锁所有游戏内容');
+            
+            // 关闭对话框
+            const dialog = document.querySelector('div[style*="position: fixed;"]');
+            if (dialog) {
+                dialog.remove();
+            }
+            
+            // 更新解锁状态
+            checkUnlockStatus();
+        }
+
+        // 页面加载时检查解锁状态
+        window.addEventListener('DOMContentLoaded', checkUnlockStatus);
+    </script>
+
+    <!-- 导航功能脚本 -->
+    <script>
+        // 游戏数据 - 按照呐喊、彷徨、故事新编的顺序排列
+        const games = [
+            {
+                id: "luxun-douxu",
+                name: "鲁迅小说-代序",
+                description: "鲁迅小说《我怎么做起小说来》的交互式游戏",
+                path: "daixu.html",
+                order: 1
+            },
+            {
+                id: "luxun-yijianxiaoshi",
+                name: "鲁迅小说-一件小事",
+                description: "鲁迅小说《一件小事》的交互式游戏",
+                path: "yijianxiaoshi.html",
+                order: 2
+            },
+            {
+                id: "luxun-kongyiji",
+                name: "鲁迅小说-孔乙己",
+                description: "鲁迅小说《孔乙己》的交互式游戏",
+                path: "kongyiji.html",
+                order: 3
+            },
+            {
+                id: "luxun-yao",
+                name: "鲁迅小说-药",
+                description: "鲁迅小说《药》的交互式游戏",
+                path: "yao.html",
+                order: 4
+            },
+            {
+                id: "luxun-mintian",
+                name: "鲁迅小说-明天",
+                description: "鲁迅小说《明天》的交互式游戏",
+                path: "mintian.html",
+                order: 5
+            },
+            {
+                id: "luxun-shexi",
+                name: "鲁迅小说-社戏",
+                description: "鲁迅小说《社戏》的交互式游戏",
+                path: "shexi.html",
+                order: 6
+            },
+            {
+                id: "luxun-guxiang",
+                name: "鲁迅小说-故乡",
+                description: "鲁迅小说《故乡》的交互式游戏",
+                path: "guxiang.html",
+                order: 7
+            },
+            {
+                id: "luxun-xingfudejiating",
+                name: "鲁迅小说-幸福的家庭",
+                description: "鲁迅小说《幸福的家庭》的交互式游戏",
+                path: "xingfudejiating.html",
+                order: 8
+            },
+            {
+                id: "luxun-shansi",
+                name: "鲁迅小说-伤逝",
+                description: "鲁迅小说《伤逝》的交互式游戏",
+                path: "shansi.html",
+                order: 9
+            },
+            {
+                id: "luxun-lihun",
+                name: "鲁迅小说-离婚",
+                description: "鲁迅小说《离婚》的交互式游戏",
+                path: "lihun.html",
+                order: 10
+            },
+            {
+                id: "luxun-gaolaofuzi",
+                name: "鲁迅小说-高老夫子",
+                description: "鲁迅小说《高老夫子》的交互式游戏",
+                path: "gaolaofuzi.html",
+                order: 11
+            },
+            {
+                id: "luxun-bengyue",
+                name: "鲁迅小说-奔月",
+                description: "鲁迅小说《奔月》的交互式游戏",
+                path: "bengyue.html",
+                order: 12
+            },
+            {
+                id: "luxun-butian",
+                name: "鲁迅小说-补天",
+                description: "鲁迅小说《补天》的交互式游戏",
+                path: "butian.html",
+                order: 13
+            },
+            {
+                id: "luxun-caiwei",
+                name: "鲁迅小说-采薇",
+                description: "鲁迅小说《采薇》的交互式游戏",
+                path: "caiwei.html",
+                order: 14
+            },
+            {
+                id: "luxun-zhujian",
+                name: "鲁迅小说-铸剑",
+                description: "鲁迅小说《铸剑》的交互式游戏",
+                path: "zhujian.html",
+                order: 15
+            },
+            {
+                id: "luxun-qishi",
+                name: "鲁迅小说-起死",
+                description: "鲁迅小说《起死》的交互式游戏",
+                path: "qishi.html",
+                order: 16
+            },
+            {
+                id: "luxun-huaijiu",
+                name: "鲁迅小说-怀旧",
+                description: "鲁迅小说《怀旧》的交互式游戏",
+                path: "huaijiu.html",
+                order: 17
+            }
+        ];
+
+        // 获取游戏按顺序
+        function getGameByOrder(order) {
+            return games.find(game => game.order === order);
+        }
+
+        // 获取上一篇游戏
+        function getPreviousGame(currentOrder) {
+            if (currentOrder <= 1) return null;
+            return getGameByOrder(currentOrder - 1);
+        }
+
+        // 获取下一篇游戏
+        function getNextGame(currentOrder) {
+            const maxOrder = Math.max(...games.map(game => game.order));
+            if (currentOrder >= maxOrder) return null;
+            return getGameByOrder(currentOrder + 1);
+        }
+
+        // 导航功能
+        function navigateToPrevious() {
+            console.log('点击了上一篇按钮');
+            console.log('游戏数量:', games.length);
+            
+            // 获取当前文件名
+            const currentUrl = window.location.href;
+            const currentFileName = currentUrl.split('/').pop();
+            console.log('当前文件名:', currentFileName);
+            
+            // 查找当前游戏
+            let currentGame = null;
+            if (currentFileName) {
+                currentGame = games.find(game => {
+                    console.log('检查游戏:', game.name, '路径:', game.path);
+                    return game.path === currentFileName;
+                });
+            }
+
+            console.log('当前游戏:', currentGame);
+            
+            if (currentGame) {
+                const previousGame = getPreviousGame(currentGame.order);
+                console.log('上一篇游戏:', previousGame);
+                if (previousGame) {
+                    console.log('导航到:', previousGame.path);
+                    window.location.href = previousGame.path;
+                } else {
+                    console.log('已经是第一篇，导航回index.html');
+                    window.location.href = 'index.html';
+                }
+            } else {
+                console.log('未找到当前游戏，导航回index.html');
+                window.location.href = 'index.html';
+            }
+        }
+
+        function navigateToNext() {
+            console.log('点击了下一篇按钮');
+            console.log('游戏数量:', games.length);
+            
+            // 获取当前文件名
+            const currentUrl = window.location.href;
+            const currentFileName = currentUrl.split('/').pop();
+            console.log('当前文件名:', currentFileName);
+            
+            // 查找当前游戏
+            let currentGame = null;
+            if (currentFileName) {
+                currentGame = games.find(game => {
+                    console.log('检查游戏:', game.name, '路径:', game.path);
+                    return game.path === currentFileName;
+                });
+            }
+
+            console.log('当前游戏:', currentGame);
+            
+            if (currentGame) {
+                const nextGame = getNextGame(currentGame.order);
+                console.log('下一篇游戏:', nextGame);
+                if (nextGame) {
+                    console.log('导航到:', nextGame.path);
+                    window.location.href = nextGame.path;
+                }
+            } else {
+                console.log('未找到当前游戏，导航到第一篇游戏');
+                const firstGame = getGameByOrder(1);
+                if (firstGame) {
+                    window.location.href = firstGame.path;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
